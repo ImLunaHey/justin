@@ -8,7 +8,7 @@ import { env } from '@app/common/env';
 
 const connectedChannels = new Set<string>();
 const joinedChannels = new Set<string>();
-const usersJoined: Record<string, Set<string>> = {};
+const usersWatching: Record<string, Set<string>> = {};
 
 const twitch = new Twitch({
     channels: [
@@ -31,8 +31,8 @@ twitch.on('join', (channel, username, self) => {
         connectedChannels.add(channel);
     } else {
         // A user joined a channel we're already connected to
-        if (!usersJoined[channel]) usersJoined[channel] = new Set();
-        usersJoined[channel].add(username);
+        if (!usersWatching[channel]) usersWatching[channel] = new Set();
+        usersWatching[channel].add(username);
     }
 });
 
@@ -83,6 +83,12 @@ twitch.on('message', (channel, tags, message, self) => {
     });
 
     if (!tags.username) return;
+
+    // Mark this user as being watched in this channel
+    if (!usersWatching[channel]) usersWatching[channel] = new Set();
+    usersWatching[channel].add(tags.username);
+
+    // Mark this user as chatting in this channel
     if (joinedChannels.has(tags.username)) return;
     joinedChannels.add(tags.username);
     void twitch.join(tags.username).catch((error: unknown) => {
@@ -100,7 +106,8 @@ const logStats = () => {
         // How many channels we managed to join
         connected: connectedChannels.size,
         // How many users are being watched by us right now
-        watching: Object.values(usersJoined).reduce((total, users) => total + users.size, 0),
+        // We need to put every user in every channel into a big set first to prevent counting the user twice if they're watching multiple channels
+        watching: Object.values(usersWatching).reduce((users, channel) => new Set([...users.values(), ...channel.values()]), new Set<string>()).size,
     });
 };
 
