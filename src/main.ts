@@ -1,44 +1,23 @@
 import 'reflect-metadata';
 import 'dotenv/config';
+import outdent from 'outdent';
 import { logger } from '@app/common/logger';
-import { Client } from 'tmi.js';
+import { Client as Twitch } from 'tmi.js';
+import { Client as Axiom } from '@axiomhq/axiom-node';
+import { env } from '@app/common/env';
 
 const connectedChannels = new Set<string>();
 const joinedChannels = new Set<string>();
 const usersJoined: Record<string, Set<string>> = {};
 
-const client = new Client({
-    channels: [...new Set([
-        'joeykaotyk',       'avocadocannabis',  'bahtura',         'gamesdonequick',
-        'xqc',              'limmy',            'thedevdad_',      'esl_australia',
-        'themercy15',       'Tfue',             'NICKMERCS',       'shroud',
-        'Myth',             'Summit1g',         'Ninja',           'timthetatman',
-        'DrDisrespect',     'xQcOW',            'lirik',           'Pokimane',
-        'Rubius',           'TSM_Daequan',      'dakotaz',         'Syndicate',
-        'Gotaga',           'sodapoppin',       'DrLupo',          'CohhCarnage',
-        'Nightblue3',       'Yassuo',           'Dyrus',           'pokelawls',
-        'Sips_',            'castro_1021',      'KingGothalion',   'imaqtpie',
-        'faker',            'Riot Games',       'ESL_CSGO',        'TwitchRivals',
-        'pokimane',         'Asmongold',        'Sodapoppin',      'noahj456',
-        'TSM_Myth',         'RiotGames2',       'CDNThe3rd',       'RocketLeague',
-        'summit1g',         'Twitch',           'PlayHearthstone', 'jasonr',
-        'LIRIK',            'ESL_SC2',          'DrDisRespect',    'Shroud',
-        'iWillDominate',    'RiotGamesBrazil',  'Fortnite',        'DrDisrespectLIVE',
-        'loltyler1',        'LCK_Korea',        'DansGaming',      'EsfandTV',
-        'Gaules',           'VGBootCamp',       'PGL_DOTA2',       'TSM_Viss',
-        'YoDa',             'BlastPremier',     'Doublelift',      'Gorgc',
-        'ESL_LOL',          'WTSGxJeemzz',      'JoshOG',          'GamesDoneQuick',
-        'OverwatchLeague',  'TheSushiDragon',   'FortniteFR',      'Cowsep',
-        'ELEAGUETV',        'Starladder_CS_en', 'TimTheTatman',    'OgamingLoL',
-        'hiko',             'RiotGamesJP',      'ninja',           'NairoMK',
-        'Fextralife',       'BeyondTheSummit',  'ShoxTV',          'LOLITOFDEZ',
-        'Pokelawls',        'TSM_ZexRow',       'Slayerage',       'cizzorz',
-        'RiotGamesOceania', 'RiotGamesTurkish', 'nymn',             'ludwig',
-        'pewdiepie'
-    ]).values()],
+const twitch = new Twitch({
+    channels: [
+        // Only start in the creator's channel
+        'ImLunaHey',
+    ],
 });
 
-client.on('join', (channel, username, self) => {
+twitch.on('join', (channel, username, self) => {
     logger.info('join', {
         meta: {
             channel,
@@ -57,7 +36,7 @@ client.on('join', (channel, username, self) => {
     }
 });
 
-client.on('subscription', (channel, username, method, message, userstate) => {
+twitch.on('subscription', (channel, username, method, message, userstate) => {
     logger.info('subscription', {
         meta: {
             channel,
@@ -69,7 +48,7 @@ client.on('subscription', (channel, username, method, message, userstate) => {
     });
 });
 
-client.on('raided', (channel, username, viewers) => {
+twitch.on('raided', (channel, username, viewers) => {
     logger.info('raid', {
         meta: {
             channel,
@@ -79,7 +58,7 @@ client.on('raided', (channel, username, viewers) => {
     });
 });
 
-client.on('messagedeleted', (channel, username, deletedMessage, userstate) => {
+twitch.on('messagedeleted', (channel, username, deletedMessage, userstate) => {
     logger.info('message-deleted', {
         meta: {
             username,
@@ -90,7 +69,7 @@ client.on('messagedeleted', (channel, username, deletedMessage, userstate) => {
     });
 });
 
-client.on('message', (channel, tags, message, self) => {
+twitch.on('message', (channel, tags, message, self) => {
     logger.info('message', {
         meta: {
             channel,
@@ -106,7 +85,7 @@ client.on('message', (channel, tags, message, self) => {
     if (!tags.username) return;
     if (joinedChannels.has(tags.username)) return;
     joinedChannels.add(tags.username);
-    void client.join(tags.username).catch((error: unknown) => {
+    void twitch.join(tags.username).catch((error: unknown) => {
         logger.error('join', {
             error,
             channel: tags.username,
@@ -130,10 +109,33 @@ setInterval(() => {
     logStats();
 }, 10_000);
 
+const axiom = new Axiom({
+    token: env.AXIOM_TOKEN,
+});
+
 // eslint-disable-next-line @typescript-eslint/require-await
 export const main = async () => {
     logger.info('Application started');
+    
+    // Fetch all the top streamers in terms of messages
+    logger.info('Fetching streamers');
+    const streamers = await axiom.query(outdent`
+        twitch
+        | where message =~ "message"
+        | summarize messages=dcount(['meta.tags.username']) by bin_auto(_time), ['meta.channel']
+        | limit 5
+    `).then(response => {
+        // Get just the channel name
+        return response.buckets.series
+            ?.find(series => series.groups !== null)
+            ?.groups?.map(group => group.group['meta.channel'] as string) ?? [];
+    }).catch(() => []);
 
-    // Connect to top streamers
-    await client.connect();
+    // Connect to IRC
+    await twitch.connect();
+
+    // Join each of the channels
+    for (const channel of streamers) {
+        await twitch.join(channel);
+    }
 };

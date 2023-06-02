@@ -18,12 +18,18 @@ const schema = z.object({
      * The current commit hash of this deployment
      */
     GIT_COMMIT_SHA: z.string().optional(),
+    /**
+     * The token used for connecting to Axiom.co
+     * This is needed for cloud logging
+     */
+    AXIOM_TOKEN: z.string(),
 });
 
 const processEnv = {
     NODE_ENV: process.env.NODE_ENV,
     LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
     GIT_COMMIT_SHA: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA,
+    AXIOM_TOKEN: process.env.AXIOM_TOKEN,
 } satisfies Parameters<typeof schema.safeParse>[0];
 
 // --------------------------

@@ -2,6 +2,7 @@ import winston, { format, type Logger as WinstonLogger, createLogger } from 'win
 import { WinstonTransport as AxiomTransport } from '@axiomhq/axiom-node';
 import chalk from 'chalk';
 import * as pkg from '@app/../package.json';
+import { serializeError } from 'serialize-error'
 
 const logLevelColours = {
     error: 'red',
@@ -22,11 +23,15 @@ type Meta = {
     [splatSymbol]: unknown[];
 };
 
-const formatMeta = (meta: Meta) => {
+const formatMeta = (level: string, meta: Meta) => {
     const splat = meta[Symbol.for('splat') as typeof splatSymbol];
     if (splat && splat.length) {
         const _splat = splat.length === 1 ? splat[0] : splat;
-        return _splat ? JSON.stringify(_splat) : '';
+        if (!_splat) return '';
+        return JSON.stringify(level === 'error' ? {
+            ..._splat,
+            error: serializeError((_splat as { error: Error }).error),
+        } : _splat);
     }
     return '';
 };
@@ -79,7 +84,7 @@ export class Logger {
                             const formattedDate = new Date(timestamp as string).toLocaleTimeString('en');
                             const serviceName = (service as string) ?? 'app';
                             const formattedLevel = colourLevel(level as keyof typeof logLevelColours);
-                            const formattedMeta = formatMeta(meta as Meta);
+                            const formattedMeta = formatMeta(level, meta as Meta);
                             return `${formattedDate} [${serviceName}] [${formattedLevel}]: ${message as string} ${formattedMeta}`;
                         }),
                     ),

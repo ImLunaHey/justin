@@ -1,7 +1,7 @@
 // import '@app/common/env';
 import { defineConfig } from 'tsup';
 
-export default defineConfig({
+export default defineConfig(options => ({
     entry: [
         'src/index.ts'
     ],
@@ -10,5 +10,5 @@ export default defineConfig({
     clean: true,
     treeshake: true,
     outDir: 'dist',
-    minify: true,
-});
+    minify: !options.watch,
+}));

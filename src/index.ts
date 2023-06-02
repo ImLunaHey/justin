@@ -7,4 +7,9 @@ main().catch(error => {
     logger.error('Application crashed', {
         error,
     });
+
+    // Ensure application exists
+    // @TODO: find how what's holding the app open
+    //        it's very likely a TCP connection
+    process.exit(1);
 });
