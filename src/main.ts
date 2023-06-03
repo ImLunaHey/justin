@@ -171,9 +171,7 @@ const joinTopChannels = async (limit: number) => {
 
 // Every 30 mins join more channels
 setInterval(() => {
-    try {
-        await joinTopChannels(100);
-    }
+    void joinTopChannels(100);
 }, 30 * 60 * 60);
 
 // eslint-disable-next-line @typescript-eslint/require-await
