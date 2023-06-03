@@ -154,6 +154,34 @@ twitch.on('followersonly', (channel, enabled, length) => {
     });
 });
 
+twitch.on('mod', (channel, username) => {
+    logger.info('mod', {
+        channel,
+        username,
+    });
+});
+
+twitch.on('resub', (channel, username, months, message, userstate) => {
+    logger.info('resub', {
+        channel,
+        username,
+        months,
+        message,
+        userstate,
+    });
+});
+
+twitch.on('subgift', (channel, username, streakMonths, recipient, methods, userstate) => {
+    logger.info('cheer', {
+        channel,
+        username,
+        streakMonths,
+        recipient,
+        methods,
+        'user-state': userstate,
+    });
+})
+
 
 const logStats = () => {
     logger.info('stats', {
