@@ -100,6 +100,61 @@ twitch.on('message', (channel, tags, message, self) => {
     // });
 });
 
+twitch.on('anonsubgift', (channel, streakMonths, recipient, methods, userstate) => {
+    logger.info('anon-sub-gift', {
+        meta: {
+            streakMonths,
+            channel,
+            recipient,
+            methods,
+            'user-state': userstate,
+        },
+    });
+});
+
+twitch.on('ban', (channel, username, userstate) => {
+    logger.info('ban', {
+        channel,
+        username,
+        'user-state': userstate,
+    });
+});
+
+twitch.on('primepaidupgrade', (channel, username, methods, userstate) => {
+    logger.info('prime-paid-upgrade', {
+        channel,
+        username,
+        methods,
+        'user-state': userstate,
+    });
+});
+
+twitch.on('timeout', (channel, username, reason, duration, userstate) => {
+    logger.info('timeout', {
+        channel,
+        username,
+        reason,
+        duration,
+        'user-state': userstate,
+    });
+});
+
+twitch.on('cheer', (channel, userstate) => {
+    logger.info('cheer', {
+        channel,
+        'user-state': userstate,
+    });
+});
+
+twitch.on('followersonly', (channel, enabled, length) => {
+    logger.info('followers-only', {
+        channel,
+        enabled,
+        length,
+    });
+});
+
+
 const logStats = () => {
     logger.info('stats', {
         // How many channels we've attempted to join
