@@ -141,7 +141,7 @@ const fetchStreamers = async (limit: number) => {
             ?.groups?.map(group => group.group['meta.channel'] as string) ?? [];
     })
     // Remove all the channel we've already joined
-    .then(streamers => streamers.filter(channel => joinedChannels.has(channel)))
+    .then(streamers => streamers.filter(channel => !joinedChannels.has(channel)))
     .catch(() => []);
 }
 
