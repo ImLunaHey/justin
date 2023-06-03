@@ -146,6 +146,10 @@ export const main = async () => {
         try {
             await twitch.join(channel);
         } catch (error: unknown) {
+            console.log('failed joining channel', {
+                channel,
+                error,
+            });
             logger.error('failed joining channel', {
                 channel,
                 error,
