@@ -88,15 +88,15 @@ twitch.on('message', (channel, tags, message, self) => {
     if (!usersWatching[channel]) usersWatching[channel] = new Set();
     usersWatching[channel].add(tags.username);
 
-    // Mark this user as chatting in this channel
-    if (joinedChannels.has(tags.username)) return;
-    joinedChannels.add(tags.username);
-    void twitch.join(tags.username).catch((error: unknown) => {
-        logger.error('join', {
-            error,
-            channel: tags.username,
-        });
-    });
+    // // Mark this user as chatting in this channel
+    // if (joinedChannels.has(tags.username)) return;
+    // joinedChannels.add(tags.username);
+    // void twitch.join(tags.username).catch((error: unknown) => {
+    //     logger.error('join', {
+    //         error,
+    //         channel: tags.username,
+    //     });
+    // });
 });
 
 const logStats = () => {
