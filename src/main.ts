@@ -112,6 +112,27 @@ twitch.on('anonsubgift', (channel, streakMonths, recipient, methods, userstate) 
     });
 });
 
+
+twitch.on('anonsubmysterygift', (channel, numOfSubs, methods, userstate) => {
+    logger.info('anon-sub-mystery-gift', {
+        meta: {
+            'number-of-subs': numOfSubs,
+            channel,
+            methods,
+            'user-state': userstate,
+        },
+    });
+});
+
+twitch.on('emoteonly', (channel, enabled) => {
+    logger.info('emote-only', {
+        meta: {
+            channel,
+            enabled,
+        },
+    });
+});
+
 twitch.on('ban', (channel, username, userstate) => {
     logger.info('ban', {
         channel,
@@ -180,7 +201,7 @@ twitch.on('subgift', (channel, username, streakMonths, recipient, methods, users
         methods,
         'user-state': userstate,
     });
-})
+});
 
 
 const logStats = () => {
