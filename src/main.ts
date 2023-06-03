@@ -172,7 +172,7 @@ twitch.on('resub', (channel, username, months, message, userstate) => {
 });
 
 twitch.on('subgift', (channel, username, streakMonths, recipient, methods, userstate) => {
-    logger.info('cheer', {
+    logger.info('subgift', {
         channel,
         username,
         streakMonths,
