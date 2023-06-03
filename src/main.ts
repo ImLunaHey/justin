@@ -6,8 +6,9 @@ import { Client as Twitch } from 'tmi.js';
 import { Client as Axiom } from '@axiomhq/axiom-node';
 import { env } from '@app/common/env';
 
-const connectedChannels = new Set<string>();
+const joiningChannels = new Set<string>();
 const joinedChannels = new Set<string>();
+
 const usersWatching: Record<string, Set<string>> = {};
 
 const twitch = new Twitch({
@@ -28,7 +29,7 @@ twitch.on('join', (channel, username, self) => {
 
     if (self) {
         // This bot joined a channel
-        connectedChannels.add(channel);
+        joinedChannels.add(channel);
     } else {
         // A user joined a channel we're already connected to
         if (!usersWatching[channel]) usersWatching[channel] = new Set();
@@ -100,11 +101,11 @@ twitch.on('message', (channel, tags, message, self) => {
 });
 
 const logStats = () => {
-    logger.info('channels', {
+    logger.info('stats', {
         // How many channels we've attempted to join
-        joined: joinedChannels.size,
+        joining: joiningChannels.size,
         // How many channels we managed to join
-        connected: connectedChannels.size,
+        joined: joinedChannels.size,
         // How many users are being watched by us right now
         // We need to put every user in every channel into a big set first to prevent counting the user twice if they're watching multiple channels
         watching: Object.values(usersWatching).reduce((users, channel) => new Set([...users.values(), ...channel.values()]), new Set<string>()).size,
@@ -120,40 +121,59 @@ const axiom = new Axiom({
     token: env.AXIOM_TOKEN,
 });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-export const main = async () => {
-    logger.info('Application started');
-    
-    // Fetch all the top streamers in terms of messages
-    logger.info('Fetching streamers');
-    const streamers = await axiom.query(outdent`
+const fetchStreamers = async (limit: number) => {
+    const joined = [...joinedChannels.values()];
+    const query = outdent`
         twitch
         | where message =~ "message"
+        ${joined ? `| where ${joined.map(channel => `['meta.channel'] != "${channel}"`).join(' and ')}` : ''}
         | summarize messages=dcount(['meta.tags.username']) by bin_auto(_time), ['meta.channel']
-        | limit 150
-    `).then(response => {
+        | limit ${limit}
+    `;
+
+    logger.info('axiom', {
+        query
+    });
+
+    return axiom.query(query).then(response => {
         // Get just the channel name
         return response.buckets.series
             ?.find(series => series.groups !== null)
             ?.groups?.map(group => group.group['meta.channel'] as string) ?? [];
-    }).catch(() => []);
+    })
+    // Remove all the channel we've already joined
+    .then(streamers => streamers.filter(channel => joinedChannels.has(channel)))
+    .catch(() => []);
+}
 
-    // Connect to IRC
-    await twitch.connect();
+const joinTopChannels = async (limit: number) => {
+    // Fetch all the top streamers in terms of messages
+    logger.info('Fetching streamers');
+    const streamers = await fetchStreamers(limit);
 
     // Join each of the channels
     for (const channel of streamers) {
         try {
+            logger.info('joining', {
+                channel
+            });
             await twitch.join(channel);
         } catch (error: unknown) {
-            console.log('failed joining channel', {
-                channel,
-                error,
-            });
             logger.error('failed joining channel', {
                 channel,
                 error,
             });
         }
     }
+}
+
+// eslint-disable-next-line @typescript-eslint/require-await
+export const main = async () => {
+    logger.info('Application started');
+
+    // Connect to IRC
+    await twitch.connect();
+    
+    // Join the top 100 channels
+    await joinTopChannels(100);
 };
