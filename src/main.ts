@@ -126,7 +126,7 @@ const fetchStreamers = async (limit: number) => {
     const query = outdent`
         twitch
         | where message =~ "message"
-        ${joined ? `| where ${joined.map(channel => `['meta.channel'] != "${channel}"`).join(' and ')}` : ''}
+        ${joined.length > 0 ? `| where ${joined.map(channel => `['meta.channel'] != "${channel}"`).join(' and ')}` : ''}
         | summarize messages=dcount(['meta.tags.username']) by bin_auto(_time), ['meta.channel']
         | limit ${limit}
     `;
