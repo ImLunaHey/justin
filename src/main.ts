@@ -149,6 +149,9 @@ const joinTopChannels = async (limit: number) => {
     // Fetch all the top streamers in terms of messages
     logger.info('Fetching streamers');
     const streamers = await fetchStreamers(limit);
+    logger.info('Fetched streamers', {
+        streamers,
+    });
 
     // Join each of the channels
     for (const channel of streamers) {
