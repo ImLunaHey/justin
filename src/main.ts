@@ -130,7 +130,7 @@ export const main = async () => {
         twitch
         | where message =~ "message"
         | summarize messages=dcount(['meta.tags.username']) by bin_auto(_time), ['meta.channel']
-        | limit 250
+        | limit 150
     `).then(response => {
         // Get just the channel name
         return response.buckets.series
@@ -143,6 +143,13 @@ export const main = async () => {
 
     // Join each of the channels
     for (const channel of streamers) {
-        await twitch.join(channel);
+        try {
+            await twitch.join(channel);
+        } catch (error: unknown) {
+            logger.error('failed joining channel', {
+                channel,
+                error,
+            });
+        }
     }
 };
