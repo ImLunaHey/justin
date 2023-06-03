@@ -130,7 +130,7 @@ export const main = async () => {
         twitch
         | where message =~ "message"
         | summarize messages=dcount(['meta.tags.username']) by bin_auto(_time), ['meta.channel']
-        | limit 100
+        | limit 250
     `).then(response => {
         // Get just the channel name
         return response.buckets.series
