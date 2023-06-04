@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import 'dotenv/config';
 import outdent from 'outdent';
+import { setTimeout } from 'timers/promises';
 import { logger } from '@app/common/logger';
 import { Client as Twitch } from 'tmi.js';
 import { Client as Axiom } from '@axiomhq/axiom-node';
@@ -273,11 +274,6 @@ const joinTopChannels = async (limit: number) => {
     }
 };
 
-// Every 30 mins join more channels
-setInterval(() => {
-    void joinTopChannels(100);
-}, 30 * 60 * 1_000);
-
 // eslint-disable-next-line @typescript-eslint/require-await
 export const main = async () => {
     logger.info('Application started');
@@ -286,5 +282,11 @@ export const main = async () => {
     await twitch.connect();
     
     // Join the top 100 channels
+    await joinTopChannels(100);
+
+    // Wait 10 mins for the first 100 to settle
+    await setTimeout(10 * (60 * 1_000));
+
+    // Join the next top 100 channels
     await joinTopChannels(100);
 };
