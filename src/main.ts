@@ -24,7 +24,7 @@ twitch.on('join', (channel, username, self) => {
         meta: {
             channel,
             username,
-            self,    
+            self,
         },
     });
 
@@ -38,14 +38,14 @@ twitch.on('join', (channel, username, self) => {
     }
 });
 
-twitch.on('subscription', (channel, username, method, message, userstate) => {
+twitch.on('subscription', (channel, username, method, message, userState) => {
     logger.info('subscription', {
         meta: {
             channel,
             username,
             method,
             message,
-            'user-state': userstate,
+            'user-state': userState,
         },
     });
 });
@@ -77,6 +77,8 @@ twitch.on('message', (channel, tags, message, self) => {
             channel,
             tags: {
                 ...tags,
+                'badge-info': undefined,
+                badges: undefined,
                 emotes: undefined,
             } satisfies typeof tags,
             message,
@@ -112,7 +114,6 @@ twitch.on('anonsubgift', (channel, streakMonths, recipient, methods, userstate) 
         },
     });
 });
-
 
 twitch.on('anonsubmysterygift', (channel, numOfSubs, methods, userstate) => {
     logger.info('anon-sub-mystery-gift', {
@@ -203,7 +204,6 @@ twitch.on('subgift', (channel, username, streakMonths, recipient, methods, users
         'user-state': userstate,
     });
 });
-
 
 const logStats = () => {
     logger.info('stats', {

@@ -11,4 +11,5 @@ export default defineConfig(options => ({
     treeshake: true,
     outDir: 'dist',
     minify: !options.watch,
+    dts: true,
 }));
